@@ -1,0 +1,50 @@
+{
+  "type": "object",
+  "properties": {
+    "answer": {
+      "type": "string",
+      "description": "Concise answer to the customer question"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Confidence level from 0.0 to 1.0"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["billing", "technical", "general", "account", "product"],
+      "description": "Question category"
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Recommended actions for support agent"
+    },
+    "requires_escalation": {
+      "type": "boolean",
+      "description": "Whether the issue requires escalation"
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "complexity": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "Question complexity level"
+        },
+        "sentiment": {
+          "type": "string",
+          "enum": ["positive", "neutral", "negative"],
+          "description": "Customer sentiment"
+        }
+      },
+      "required": ["complexity", "sentiment"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["answer", "confidence", "category", "actions", "requires_escalation", "metadata"],
+  "additionalProperties": false
+}

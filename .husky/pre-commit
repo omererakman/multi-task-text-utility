@@ -1,0 +1,11 @@
+if git diff --cached --name-only | grep -qE '(^|/)\.env($|\.local|\.dev|\.prod|\.production|\.staging)'; then
+  echo "\033[0;31mERROR: Attempting to commit .env files!\033[0m"
+  echo "\033[1;33mThe following .env files were found:\033[0m"
+  git diff --cached --name-only | grep -E '(^|/)\.env($|\.local|\.dev|\.prod|\.production|\.staging)'
+  echo ""
+  echo "\033[1;33mPlease remove these files from staging.\033[0m"
+  echo "You can use: git reset HEAD <file>"
+  exit 1
+fi
+
+npm test
