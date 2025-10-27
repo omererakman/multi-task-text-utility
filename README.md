@@ -15,6 +15,7 @@ A TypeScript-based customer support AI assistant that uses OpenAI's API to gener
 
 - Node.js 22 or higher
 - OpenAI API key
+- **Windows Users**: Use [Git Bash](https://git-scm.com/downloads) to run the commands in this README
 
 ## Installation
 
