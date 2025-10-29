@@ -49,6 +49,9 @@ export async function processQuery(
         model: modelName,
         messages: [
           {
+            role: 'system',
+            content: 'You are a helpful assistant',
+          },{
             role: 'user',
             content: prompt,
           },
