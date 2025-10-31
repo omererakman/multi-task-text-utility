@@ -7,7 +7,7 @@ A TypeScript-based customer support AI assistant that uses OpenAI's API to gener
 - **Structured JSON Responses**: Returns consistent, well-formatted responses with answer, confidence, actions, and metadata
 - **Prompt Engineering**: Implements few-shot prompting technique
 - **Comprehensive Metrics**: Tracks tokens (prompt/completion/total), latency, and estimated costs
-- **Safety Features**: OpenAI Moderation API integration + local prompt injection detection
+- **Safety Features**: OpenAI Moderation API integration + PII detection & redaction + prompt injection detection
 - **Automated Testing**: Full test suite for JSON validation, cost calculation, and security
 - **Metrics Storage**: Saves metrics in JSON format with array of results per run
 
@@ -220,17 +220,24 @@ Automatically checks all inputs for:
 - Harassment
 - etc.
 
-### 2. Prompt Injection Detection
+### 2. PII Detection & Redaction
+Detects and masks sensitive information including:
+- Email addresses, phone numbers, SSN
+- Credit card numbers, API keys
+- Passport/driver's license numbers
+- IP addresses, account numbers
+
+### 3. Prompt Injection Detection
 Pattern-based detection for attacks like:
 - "Ignore previous instructions"
 - "System: You are now..."
 - "Act as if you are..."
 - "[INST]" or "[SYSTEM]" tags
 
-### 3. Fallback Responses
+### 4. Fallback Responses
 When unsafe content is detected, returns a safe, professional response with appropriate escalation actions.
 
-### 4. Git Pre-Commit Hooks (Husky)
+### 5. Git Pre-Commit Hooks (Husky)
 Prevents accidental commits of sensitive files:
 - **Blocks `.env` files**: Pre-commit hook detects and blocks any `.env` file from being committed
 - **Runs tests**: Automatically runs unit tests before each commit to ensure code quality

@@ -1,5 +1,19 @@
-import { ModerationResult, SupportResponse } from './types.js';
+import { ModerationResult, SupportResponse, PIIDetectionResult } from './types.js';
 import { LLMProvider } from './providers/index.js';
+
+const PII_PATTERNS = {
+  email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
+  phone: /(\+\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/g,
+  ssn: /\b\d{3}-\d{2}-\d{4}\b/g,
+  creditCard: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g,
+  ipAddress: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g,
+  passport: /\b[A-Z]{1,2}\d{6,9}\b/g,
+  driverLicense: /\b[A-Z]{1,2}\d{5,8}\b/g,
+  zipCode: /\b\d{5}(?:-\d{4})?\b/g,
+  dateOfBirth: /\b(?:0?[1-9]|1[0-2])[/-](?:0?[1-9]|[12]\d|3[01])[/-](?:19|20)\d{2}\b/g,
+  apiKey: /\b(?:api[_-]?key|apikey|access[_-]?token)[:\s=]+[\w-]+/gi,
+  accountNumber: /\b(?:account|acct)[#:\s]+\d{6,}\b/gi,
+};
 
 export async function moderateInput(
   provider: LLMProvider,
@@ -58,26 +72,94 @@ export function detectPromptInjection(question: string): boolean {
   return injectionPatterns.some(pattern => pattern.test(question));
 }
 
+export function detectPII(text: string): PIIDetectionResult {
+  const detectedPII: Record<string, string[]> = {};
+  let hasPII = false;
+
+  for (const [type, pattern] of Object.entries(PII_PATTERNS)) {
+    const matches = text.match(pattern);
+    if (matches && matches.length > 0) {
+      detectedPII[type] = matches;
+      hasPII = true;
+    }
+  }
+
+  return {
+    detected: hasPII,
+    types: detectedPII,
+  };
+}
+
+export function redactPII(text: string, detectionResult?: PIIDetectionResult): string {
+  const result = detectionResult || detectPII(text);
+
+  if (!result.detected) {
+    return text;
+  }
+
+  let redactedText = text;
+
+  for (const [type, matches] of Object.entries(result.types)) {
+    if (Array.isArray(matches)) {
+      for (const match of matches) {
+        const redactionLabel = `[${type.toUpperCase()}_REDACTED]`;
+        redactedText = redactedText.replace(match, redactionLabel);
+      }
+    }
+  }
+
+  return redactedText;
+}
+
 export async function performSafetyCheck(
   provider: LLMProvider,
   question: string
-): Promise<{ safe: boolean; moderationResult: ModerationResult; injectionDetected: boolean }> {
+): Promise<{
+  safe: boolean;
+  moderationResult: ModerationResult;
+  injectionDetected: boolean;
+  piiDetected: PIIDetectionResult;
+  sanitizedQuestion?: string;
+}> {
   const moderationResult = await moderateInput(provider, question);
   const injectionDetected = detectPromptInjection(question);
-
-  const safe = !moderationResult.flagged && !injectionDetected;
+  const piiDetected = detectPII(question);
 
   if (injectionDetected) {
     console.warn('⚠️  Potential prompt injection detected in question');
+    moderationResult.categories['prompt_injection'] = true;
+    moderationResult.category_scores['prompt_injection'] = 1.0;
+    moderationResult.flagged = true;
+  }
+
+  if (piiDetected.detected) {
+    console.warn('⚠️  PII detected in question:', Object.keys(piiDetected.types).join(', '));
+    moderationResult.categories['pii_detected'] = true;
+    moderationResult.category_scores['pii_detected'] = 1.0;
+    moderationResult.flagged = true;
+
+    for (const piiType of Object.keys(piiDetected.types)) {
+      moderationResult.categories[`pii_${piiType}`] = true;
+      moderationResult.category_scores[`pii_${piiType}`] = 1.0;
+    }
   }
 
   if (moderationResult.flagged) {
     console.warn('⚠️  Content flagged by Moderation API');
   }
 
-  return {
+  const safe = !moderationResult.flagged && !injectionDetected && !piiDetected.detected;
+
+  const result: any = {
     safe,
     moderationResult,
     injectionDetected,
+    piiDetected,
   };
+
+  if (piiDetected.detected) {
+    result.sanitizedQuestion = redactPII(question, piiDetected);
+  }
+
+  return result;
 }

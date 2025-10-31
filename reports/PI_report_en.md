@@ -131,11 +131,13 @@ Token distribution shows 91.2% goes to the prompt (the few-shot examples) and 8.
 
 ## Safety Implementation
 
-The system has two layers of defense:
+The system has three layers of defense:
 
 **Layer 1: OpenAI Moderation API** - Catches hate speech, violence, self-harm, harassment. Adds ~200ms latency but it's free and catches things I wouldn't think to pattern-match.
 
-**Layer 2: Local pattern detection** - Regex patterns looking for prompt injection attempts like:
+**Layer 2: PII Detection & Redaction** - Pattern-based detection for sensitive information including emails, phone numbers, SSN, credit cards, API keys, passport/driver's license numbers, IP addresses, and account numbers. Detects PII and provides redacted versions with labeled placeholders.
+
+**Layer 3: Prompt Injection Detection** - Regex patterns looking for prompt injection attempts like:
 - "Ignore previous instructions" (and variations)
 - "SYSTEM:" role injection
 - Special tokens like [INST], [SYSTEM]
@@ -143,7 +145,7 @@ The system has two layers of defense:
 
 Takes under 5ms and costs nothing since it runs locally.
 
-When unsafe input is detected, the system logs the incident, returns a professional decline message, flags it in metrics, and recommends human escalation. The original question is preserved for review.
+When unsafe input is detected (including PII), the system logs the incident, adds the violation to moderation categories, returns a professional decline message, flags it in metrics, and recommends human escalation. For PII, a sanitized version is provided.
 
 ### Adversarial Testing Results
 

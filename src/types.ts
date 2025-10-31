@@ -30,6 +30,11 @@ export interface ModerationResult {
   category_scores: Record<string, number>;
 }
 
+export interface PIIDetectionResult {
+  detected: boolean;
+  types: Record<string, string[]>;
+}
+
 export interface QueryResult {
   response: SupportResponse;
   metrics: QueryMetrics;
