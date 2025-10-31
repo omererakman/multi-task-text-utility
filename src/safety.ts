@@ -1,5 +1,6 @@
 import { ModerationResult, SupportResponse, PIIDetectionResult } from './types.js';
 import { LLMProvider } from './providers/index.js';
+import { logger } from './logger.js';
 
 const PII_PATTERNS = {
   email: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g,
@@ -22,7 +23,7 @@ export async function moderateInput(
   try {
     return await provider.moderateContent(question);
   } catch (error) {
-    console.error('Moderation API error:', error);
+    logger.error({ err: error }, 'Moderation API error');
     return {
       flagged: false,
       categories: {},
@@ -126,14 +127,14 @@ export async function performSafetyCheck(
   const piiDetected = detectPII(question);
 
   if (injectionDetected) {
-    console.warn('⚠️  Potential prompt injection detected in question');
+    logger.warn('⚠️  Potential prompt injection detected in question');
     moderationResult.categories['prompt_injection'] = true;
     moderationResult.category_scores['prompt_injection'] = 1.0;
     moderationResult.flagged = true;
   }
 
   if (piiDetected.detected) {
-    console.warn('⚠️  PII detected in question:', Object.keys(piiDetected.types).join(', '));
+    logger.warn({ piiTypes: Object.keys(piiDetected.types) }, '⚠️  PII detected in question');
     moderationResult.categories['pii_detected'] = true;
     moderationResult.category_scores['pii_detected'] = 1.0;
     moderationResult.flagged = true;
@@ -145,7 +146,7 @@ export async function performSafetyCheck(
   }
 
   if (moderationResult.flagged) {
-    console.warn('⚠️  Content flagged by Moderation API');
+    logger.warn('⚠️  Content flagged by Moderation API');
   }
 
   const safe = !moderationResult.flagged && !injectionDetected && !piiDetected.detected;
