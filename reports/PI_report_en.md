@@ -62,7 +62,18 @@ I also use OpenAI's JSON schema response format in strict mode, which enforces t
 
 ## Metrics Tracking
 
-Every query logs 11 metrics to a JSON file with an array of results per run:
+Every query logs 11 metrics to a JSON file with an array of results per run.
+
+### Storage Location
+
+Metrics are saved to different locations depending on the execution mode:
+
+- **Development mode** (`npm run dev`): Saves to `metrics/metrics.json` in project root
+- **Production mode** (`npm start`): Saves to `dist/metrics/metrics.json` in dist folder
+
+**Note**: The two modes maintain separate metrics files and do not share data.
+
+### Tracked Metrics
 
 | Metric | Purpose |
 |--------|---------|

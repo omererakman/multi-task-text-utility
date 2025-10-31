@@ -175,9 +175,18 @@ multi-task-text-utility/
 
 ## Metrics Storage
 
-Metrics are automatically saved in JSON format with an array of results per run:
+Metrics are automatically saved in JSON format with an array of results per run.
 
-### JSON Format (`metrics/metrics.json`)
+### File Locations
+
+The location of `metrics.json` depends on which command you use:
+
+- **`npm run dev`**: Saves to `metrics/metrics.json` (in project root)
+- **`npm start`**: Saves to `dist/metrics/metrics.json` (in dist folder)
+
+**Note**: The two commands maintain separate metrics files. If you use both development and production modes, they will not share data.
+
+### JSON Format
 Detailed structured data suitable for programmatic analysis:
 ```json
 [
